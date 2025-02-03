@@ -1,0 +1,30 @@
+.program led_matrix
+
+.wrap_target
+    out x, 1
+    jmp !x do_zero
+do_one:
+    set pins, 1 [4]
+    jmp cont
+do_zero:
+    set pins, 1 [2]
+    set pins, 0 [2]
+cont:
+    set pins, 0 [1]
+.wrap
+
+% c-sdk {
+static inline void led_matrix_program_init(PIO pio, uint sm, uint offset, uint pin) {
+    pio_sm_config c = led_matrix_program_get_default_config(offset);
+    sm_config_set_set_pins(&c, pin, 1);
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+    float div = clock_get_hz(clk_sys) / 8000000.0;
+    sm_config_set_clkdiv(&c, div);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+    sm_config_set_out_shift(&c, false, true, 24);
+    sm_config_set_out_special(&c, true, false, false);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
